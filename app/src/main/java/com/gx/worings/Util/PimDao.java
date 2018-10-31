@@ -55,7 +55,7 @@ public class PimDao {
             result = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
             JSONObject j = (JSONObject) jsonObject.get(0);
-            if (null == j){
+            if (null == j) {
                 return 0;
             }
             return Integer.parseInt(j.getString("count"));
@@ -81,7 +81,31 @@ public class PimDao {
             result = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
             JSONObject j = (JSONObject) jsonObject.get(0);
-            if (null == j){
+            if (null == j) {
+                return 0;
+            }
+            return Integer.parseInt(j.getString("count"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    /**
+     * 插入数据使用Map
+     *
+     * @return
+     */
+    public static int insert(String tab,  Map<String, String> params) {
+        String result;
+        params.put("sql", mapToInsertSql(params));
+        params.put("tab", tab);
+        params.put("type", cons.insert);
+        try {
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
+            result = HttpRequestUtil.readString(conn.getInputStream());
+            JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
+            JSONObject j = (JSONObject) jsonObject.get(0);
+            if (null == j) {
                 return 0;
             }
             return Integer.parseInt(j.getString("count"));
@@ -107,7 +131,7 @@ public class PimDao {
             result = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
             JSONObject j = (JSONObject) jsonObject.get(0);
-            if (null == j){
+            if (null == j) {
                 return 0;
             }
             return Integer.parseInt(j.getString("count"));
@@ -118,7 +142,7 @@ public class PimDao {
     }
 
     /**
-     * 删除数据
+     * 查询一条数据
      *
      * @return
      */
@@ -132,10 +156,69 @@ public class PimDao {
             String result = HttpRequestUtil.readString(conn.getInputStream());
             System.out.println(result);
             return JSONObject.parseObject(result);
-        }catch (Exception es){
+        } catch (Exception es) {
             es.printStackTrace();
             return null;
         }
     }
+
+    /**
+     * 插入数据
+     *
+     * @return
+     */
+    public static int update(String tab, String values) {
+        String result;
+        Map<String, String> params = new HashMap<>();
+        params.put("tab", tab);
+        params.put("values", values);
+        params.put("type", cons.update);
+        try {
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
+            result = HttpRequestUtil.readString(conn.getInputStream());
+            JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
+            JSONObject j = (JSONObject) jsonObject.get(0);
+            if (null == j) {
+                return 0;
+            }
+            return Integer.parseInt(j.getString("count"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+
+    /**
+     * 插入数据
+     *
+     * @return
+     */
+    public static String mapToInsertSql(Map<String, String> params) {
+        String Field = "";
+        String values = "";
+        try {
+            if (null != params) {
+                Boolean isFrist = true;
+                for (String key : params.keySet()) {
+                    if (isFrist) {
+                        Field += "(" + key;
+                        values += "('" + params.get(key) + "'";
+                        isFrist = false;
+                    }else {
+                        Field += "," + key;
+                        values += ",'" + params.get(key) + "'";
+                    }
+                }
+            }
+            Field +=  ")";
+            values +=  ")";
+            return  Field + " values " + values;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
 
 }

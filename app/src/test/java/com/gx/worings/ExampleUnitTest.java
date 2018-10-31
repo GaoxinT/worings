@@ -30,32 +30,53 @@ public class ExampleUnitTest {
         List<Map> list = new ArrayList();
 
         m.put("tab","t_location");
-        m.put("where","phone = 'MeizuM6 Note'");
-        m.put("type","count");
-        m.put("startIndex","1");
-        m.put("endIndex","10");
+        m.put("where","id = '52'");
+        m.put("type","selectOne");
+        //m.put("startIndex","1");
+        //m.put("endIndex","10");
 
         list.add(m);
-//        try {
-//            JSONObject jsonObject = (JSONObject) JSONObject.toJSON(m);
-//            String name = jsonObject.getString("das");
-//            String age = jsonObject.getString("das1");
-//            System.out.print(name);
-//            System.out.print(age);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
+        System.out.println(mapToInsertSql(m));
         try {
-            URLConnection conn = HttpRequestUtil.sendPostRequest("http://183.215.2.237/woring/appexecute!ExecuteSql.action",m,null);
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL_LOCAL,m,null);
             String s = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(s);
             JSONObject j = (JSONObject) jsonObject.get(0);
-            System.out.println(j.getString("count"));
+            System.out.println(j.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+    }
+    /**
+     * 插入数据
+     *
+     * @return
+     */
+    public static String mapToInsertSql(Map<String, Object> params) {
+        String Field = "";
+        String values = "";
+        try {
+            if (null != params) {
+                Boolean isFrist = true;
+                for (String key : params.keySet()) {
+                    if (isFrist) {
+                        Field += "(" + key;
+                        values += "('" + params.get(key) + "'";
+                        isFrist = false;
+                    }else {
+                        Field += "," + key;
+                        values += ",'" + params.get(key) + "'";
+                    }
+                }
+            }
+            Field +=  ")";
+            values +=  ")";
+            return  Field + " values " + values;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 
 }

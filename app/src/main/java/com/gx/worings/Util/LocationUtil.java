@@ -24,7 +24,9 @@ import com.amap.api.location.AMapLocationListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Administrator on 2018/4/17.
@@ -35,6 +37,7 @@ public class LocationUtil {
     private static LocationUtil instance;
     private Context mContext;
     private LocationManager locationManager;
+
     public LocationUtil(Context context) {
         this.mContext = context;
     }
@@ -83,8 +86,8 @@ public class LocationUtil {
         Location location = locationManager.getLastKnownLocation(locationProvider);
         if (location != null) {
             //不为空,显示地理位置经纬度
-            Toast.makeText(mContext, location.getLatitude()+ "" + location.getLongitude(), Toast.LENGTH_SHORT).show();
-            System.out.print(location.getLatitude()+ "" + location.getLongitude());
+            Toast.makeText(mContext, location.getLatitude() + "" + location.getLongitude(), Toast.LENGTH_SHORT).show();
+            System.out.print(location.getLatitude() + "" + location.getLongitude());
             Log.d("经度：", location.getLatitude() + "");
             Log.d("纬度：", location.getLongitude() + "");
             updataLocation_local u = new updataLocation_local();
@@ -92,7 +95,7 @@ public class LocationUtil {
 
         }
         //监视地理位置变化
-        locationManager.requestLocationUpdates(locationProvider, 1000 * 60 * 5, 1, locationListener);
+        locationManager.requestLocationUpdates(locationProvider, 1000 * 60 * 2, 1, locationListener);
         return null;
     }
 
@@ -120,11 +123,6 @@ public class LocationUtil {
         //当坐标改变时触发此函数，如果Provider传进相同的坐标，它就不会被触发
         @Override
         public void onLocationChanged(Location location) {
-
-            Toast.makeText(mContext, location.getLatitude()+ "" + location.getLongitude(), Toast.LENGTH_SHORT).show();
-            Log.d("经度：", location.getLatitude() + "");
-            Log.d("纬度：", location.getLongitude() + "");
-            System.out.print(location.getLatitude()+ "" + location.getLongitude());
             updataLocation_local u = new updataLocation_local();
             u.execute(location);
         }
@@ -140,15 +138,23 @@ public class LocationUtil {
             Location location = (Location) objects[0];
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");// HH:mm:ss
             Date date = new Date(System.currentTimeMillis());//获取当前时间
-            try{
+            Map<String, String> params = new HashMap<>();
+            try {
                 double lat = location.getLatitude();
                 double longs = location.getLongitude();
                 String time = simpleDateFormat.format(date);
                 String phone = android.os.Build.BRAND + Build.MODEL;
-                String sql = "insert into t_location VALUES('"+ phone +"','"+
-                        lat  +"','"+ longs +"','"+ longs + "," + lat +"','"+ time +"')";
+                String sql = "insert into t_location VALUES('" + phone + "','" +
+                        lat + "','" + longs + "','" + longs + "," + lat + "','" + time + "')";
                 MySqlUtil.execSQL(sql);
-            }catch (Exception re){
+                params.put("lat", String.valueOf(location.getLatitude()));
+                params.put("lng", String.valueOf(location.getLongitude()));
+                params.put("lng_lat", location.getLongitude() + "," + location.getLatitude());
+                params.put("address", "");
+                params.put("time", simpleDateFormat.format(date));
+                params.put("phone", android.os.Build.BRAND + " " + Build.MODEL);
+                PimDao.insert("t_location", params);
+            } catch (Exception re) {
                 return "false";
             }
             return "true";
@@ -158,9 +164,10 @@ public class LocationUtil {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            Toast.makeText(mContext,""+ s , Toast.LENGTH_SHORT).show();
+            Log.d("---------------------", s + "位置保存success");
         }
     }
+
     //声明AMapLocationClient类对象
     public AMapLocationClient mLocationClient = null;
     //声明定位回调监听器
@@ -168,17 +175,23 @@ public class LocationUtil {
         @Override
         public void onLocationChanged(AMapLocation aMapLocation) {
             //Toast.makeText(mContext, aMapLocation.toString(),Toast.LENGTH_SHORT).show();
-            new updataLocation_gd().execute(aMapLocation);
+            if (!"0.0".equals(aMapLocation.getLatitude())) {
+                new updataLocation_gd().execute(aMapLocation);
+            }else {
+                Log.e("--------------------","位置获取失败");
+            }
         }
     };
     public AMapLocationClientOption mLocationOption = null;
-    public void getLngLatByGD(){
+
+    public void getLngLatByGD() {
         mLocationClient = new AMapLocationClient(mContext);
         mLocationOption = new AMapLocationClientOption();
         //设置定位回调监听
         mLocationClient.setLocationListener(mLocationListener);
         mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-        mLocationOption.setInterval(1000 * 60 * 5);
+        mLocationOption.setInterval(1000 * 60 * 2);
+        //mLocationOption.setInterval(2000 );
         mLocationOption.setNeedAddress(true);
         mLocationOption.setLocationCacheEnable(false);
         mLocationClient.setLocationOption(mLocationOption);
@@ -194,20 +207,20 @@ public class LocationUtil {
             AMapLocation location = (AMapLocation) objects[0];
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");// HH:mm:ss
             Date date = new Date(System.currentTimeMillis());//获取当前时间
-            String sql = null;
-            try{
-                double lat = location.getLatitude();
-                double longs = location.getLongitude();
-                String address = location.getAddress();
-                String time = simpleDateFormat.format(date);
-                String phone = android.os.Build.BRAND + Build.MODEL;
-                sql = "insert into t_location(phone,lat,lng,long_lat,time,address) VALUES('"+ phone +"','"+
-                        lat  +"','"+ longs +"','"+ longs + "," + lat +"','"+ time +"','"+ address +"')";
-                MySqlUtil.execSQL(sql);
-            }catch (Exception re){
+            Map<String, String> params = new HashMap<>();
+            try {
+                params.put("lat", String.valueOf(location.getLatitude()));
+                params.put("lng", String.valueOf(location.getLongitude()));
+                params.put("lng_lat", location.getLongitude() + "," + location.getLatitude());
+                params.put("address", location.getAddress());
+                params.put("time", simpleDateFormat.format(date));
+                params.put("phone", android.os.Build.BRAND + " " + Build.MODEL);
+                PimDao.insert("t_location", params);
+
+            } catch (Exception re) {
                 return "false";
             }
-            return sql;
+            return "success";
         }
 
 
@@ -215,7 +228,7 @@ public class LocationUtil {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
             //Toast.makeText(mContext,""+ s , Toast.LENGTH_SHORT).show();
-            Log.d("---------------------",s + "----success");
+            Log.d("---------------------", s + "位置保存success");
         }
     }
 }
