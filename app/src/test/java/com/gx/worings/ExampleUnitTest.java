@@ -47,14 +47,11 @@ public class ExampleUnitTest {
 //        }
 
         try {
-            System.out.println(System.currentTimeMillis());
             URLConnection conn = HttpRequestUtil.sendPostRequest("http://183.215.2.237/woring/appexecute!ExecuteSql.action",m,null);
             String s = HttpRequestUtil.readString(conn.getInputStream());
-            System.out.println(s);
             JSONArray jsonObject = (JSONArray) JSONArray.parse(s);
             JSONObject j = (JSONObject) jsonObject.get(0);
             System.out.println(j.getString("count"));
-            System.out.println(System.currentTimeMillis());
         } catch (Exception e) {
             e.printStackTrace();
         }

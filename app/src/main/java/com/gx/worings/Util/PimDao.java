@@ -21,7 +21,6 @@ public class PimDao {
     public static JSONArray list(String tab, String where, int page) {
         String result = "";
         try {
-            System.out.println(System.currentTimeMillis());
             Map<String, String> params = new HashMap<>();
             int count = PimDao.selectForInteger(tab, where);
             int startIndex = (page - 1) * cons.limit + 1;
@@ -29,11 +28,10 @@ public class PimDao {
             params.put("startIndex", String.valueOf(startIndex));
             params.put("endIndex", String.valueOf(endIndex));
             params.put("where", where);
-            params.put("type", cons.insert);
-            URLConnection conn = HttpRequestUtil.sendPostRequest("http://" + cons.HOST + "/woring/appexecute!ExecuteSql.action", params, null);
+            params.put("type", cons.selectList);
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
             result = HttpRequestUtil.readString(conn.getInputStream());
             System.out.println(result);
-            System.out.println(System.currentTimeMillis());
             return JSONArray.parseArray(result);
         } catch (Exception e) {
             e.printStackTrace();
@@ -47,15 +45,20 @@ public class PimDao {
      * @return
      */
     public static int delete(String tab, String where) {
-        String result = "";
+        String result;
         Map<String, String> params = new HashMap<>();
+        params.put("tab", tab);
+        params.put("where", where);
+        params.put("type", cons.delete);
         try {
-            System.out.println(System.currentTimeMillis());
-            URLConnection conn = HttpRequestUtil.sendPostRequest("http://" + cons.HOST + "/woring/appexecute!ExecuteSql.action", params, null);
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
             result = HttpRequestUtil.readString(conn.getInputStream());
-            System.out.println(result);
-            System.out.println(System.currentTimeMillis());
-            return 0;
+            JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
+            JSONObject j = (JSONObject) jsonObject.get(0);
+            if (null == j){
+                return 0;
+            }
+            return Integer.parseInt(j.getString("count"));
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
@@ -63,12 +66,29 @@ public class PimDao {
     }
 
     /**
-     * 删除数据
+     * 插入数据
      *
      * @return
      */
-    public static int insert(String tab, String where) {
-        return 0;
+    public static int insert(String tab, String values) {
+        String result;
+        Map<String, String> params = new HashMap<>();
+        params.put("tab", tab);
+        params.put("values", values);
+        params.put("type", cons.insert);
+        try {
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
+            result = HttpRequestUtil.readString(conn.getInputStream());
+            JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
+            JSONObject j = (JSONObject) jsonObject.get(0);
+            if (null == j){
+                return 0;
+            }
+            return Integer.parseInt(j.getString("count"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
     }
 
     /**
@@ -81,13 +101,14 @@ public class PimDao {
         Map<String, String> params = new HashMap<>();
         params.put("tab", tab);
         params.put("where", where);
+        params.put("type", cons.count);
         try {
-            URLConnection conn = HttpRequestUtil.sendPostRequest("http://" + cons.HOST + "/woring/appexecute!ExecuteSql.action", params, null);
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
             result = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
             JSONObject j = (JSONObject) jsonObject.get(0);
             if (null == j){
-
+                return 0;
             }
             return Integer.parseInt(j.getString("count"));
         } catch (Exception e) {
@@ -101,8 +122,20 @@ public class PimDao {
      *
      * @return
      */
-    public static JSONObject selectOne() {
-        return null;
+    public static JSONObject selectOne(String tab, String where) {
+        Map<String, String> params = new HashMap<>();
+        int count = PimDao.selectForInteger(tab, where);
+        params.put("where", where);
+        params.put("type", cons.selectOne);
+        try {
+            URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
+            String result = HttpRequestUtil.readString(conn.getInputStream());
+            System.out.println(result);
+            return JSONObject.parseObject(result);
+        }catch (Exception es){
+            es.printStackTrace();
+            return null;
+        }
     }
 
 }
