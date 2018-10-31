@@ -52,56 +52,6 @@ public class MySqlUtil {
         return conn;
     }
 
-    /**
-     * 下载数据
-     *
-     * @param id
-     */
-    public static boolean login(String id, String pwd) {
-        Connection conn = openConnection();
-        if (conn == null) {
-            return false;
-        }
-        String sql = "select * from tb_user where u_phone = ?";
-        try {
-            Log.v("sql", "--------" + sql);
-            PreparedStatement ps =  conn.prepareStatement(sql);
-            ps.setString(1,id);
-            result = ps.executeQuery();
-            while (result.next()) {
-                if (result.getString("u_pwd").equals(pwd)) {
-                    String _id = result.getString("_id");
-                    String u_name = result.getString("u_name");
-                    String u_phone = result.getString("u_phone");
-                    String u_pwd = result.getString("u_pwd");
-                    String last_login = result.getString("last_login");
-
-                    Uesr.getInstance().setUserId(_id);
-                    Uesr.getInstance().setUserName(u_name);
-                    Uesr.getInstance().setUserPhone(u_phone);
-                    Uesr.getInstance().setUserPwd(u_pwd);
-                    Uesr.getInstance().setUserLastLogin(last_login);
-                    Log.v("-------sql---------", Uesr.getInstance().getUserPhone());
-                    return true;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            try {
-                if (result != null) {
-                    result.close();
-                }
-                if (statement != null) {
-                    statement.close();
-                }
-            } catch (SQLException sqle) {
-
-            }
-        }
-        return false;
-    }
 
     /**
      * 下载数据

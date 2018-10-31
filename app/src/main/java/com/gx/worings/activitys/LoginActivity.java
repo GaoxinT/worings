@@ -4,6 +4,7 @@ package com.gx.worings.activitys;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -13,13 +14,20 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSONObject;
+import com.gx.worings.Entry.Uesr;
 import com.gx.worings.R;
 import com.gx.worings.Util.HttpRequestUtil;
 import com.gx.worings.Util.MySqlUtil;
+import com.gx.worings.Util.PimDao;
 import com.gx.worings.Util.UtilToos;
 
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
+import static com.gx.worings.constants.cons.sql;
 
 public class LoginActivity extends BaseActivity {
 
@@ -113,14 +121,22 @@ public class LoginActivity extends BaseActivity {
 
     class Regeidt extends AsyncTask<Object, String, String> {
         @Override
-        protected String doInBackground(Object... params) {
+        protected String doInBackground(Object... obj) {
 
-            String sql = String.format("insert into tb_user(u_name,u_phone,u_pwd,last_login) values('%s','%s','%s','%s')",
-                    params[0].toString(), params[0].toString(),
-                    params[0].toString(), params[0].toString(), UtilToos.getTimeToString(1));
-            if (MySqlUtil.execSQL(sql)) {
+            try {
+                Map map = new HashMap();
+                String userID = UUID.randomUUID().toString().replace("-", "");
+                map.put("USER_ID", userID);
+                map.put("USER_NAME", obj[0]);
+                map.put("USER_ACCOUNT", obj[0]);
+                map.put("USER_STATE", "1");
+                map.put("USER_PHONE", obj[0]);
+                map.put("USER_PWD", MD5.digest(obj[1] + userID));
+                map.put("USER_LAST_LOGIN", UtilToos.getTimeToString(1));
+                PimDao.insert("t_sys_user", map);
                 return "0";
-            } else {
+            } catch (Exception e) {
+                e.printStackTrace();
                 return "1";
             }
         }
@@ -139,7 +155,7 @@ public class LoginActivity extends BaseActivity {
                 Toast.makeText(getApplicationContext(), "注册成功！", Toast.LENGTH_SHORT).show();
                 loginPanel.setVisibility(View.VISIBLE);
                 regeditPanel.setVisibility(View.GONE);
-            }else {
+            } else {
                 Toast.makeText(getApplicationContext(), "注册失败！手机号已被注册！", Toast.LENGTH_SHORT).show();
             }
 
@@ -154,17 +170,32 @@ public class LoginActivity extends BaseActivity {
         @Override
         protected String doInBackground(Object... params) {
             Map<String, String> map = (Map<String, String>) params[0];
-            if (MySqlUtil.login(map.get("username"), map.get("password"))) {
-                return "0";
-            } else {
-                return "1";
+            try {
+                Map<String, String> result = PimDao.selectOne("t_sys_user", "USER_ACCOUNT = '" + map.get("username") + "'");
+                if (result.size() != 0) {
+                    if (result.get("USER_PWD").equals(MD5.digest(pwdEt.getText().toString() + result.get("USER_ID")))) {
+                        Uesr.getInstance().setUserId(result.get("USER_ID"));
+                        Uesr.getInstance().setUserPwd(result.get("USER_PWD"));
+                        Uesr.getInstance().setUserSex(result.get("USER_PWD"));
+                        Uesr.getInstance().setUserName(result.get("USER_NAME"));
+                        Uesr.getInstance().setUserPhone(result.get("USER_PHONE"));
+                        Uesr.getInstance().setUserLastLogin(result.get("USER_LAST_LOGIN"));
+                        return "1";
+                    } else {
+                        return "2";
+                    }
+                } else {
+                    return "3";
+                }
+            } catch (Exception r) {
+                return "4";
             }
         }
 
         @Override
-        protected void onPostExecute(String o) {
-
-            if (o == "0") {
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result.equals("1")) {
                 mSp = getSharedPreferences("login", MODE_PRIVATE);
                 SharedPreferences.Editor editor = mSp.edit(); //会生成一个Editor类型的引用变量
                 editor.putString("id", accountEt.getText().toString());
@@ -176,9 +207,30 @@ public class LoginActivity extends BaseActivity {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(getApplicationContext(), "信息错误！登入失败！", Toast.LENGTH_LONG).show();
             }
-
-            super.onPostExecute(o);
         }
+    }
+}
+
+class MD5 {
+
+    public static String digest(String str) {
+        StringBuffer sb = new StringBuffer();
+
+        try {
+            MessageDigest md5 = MessageDigest.getInstance("md5");
+            md5.update(str.getBytes("ISO8859-1"));
+            byte[] array = md5.digest();
+            for (int x = 0; x < 16; x++) {
+                if ((array[x] & 0xff) < 0x10)
+                    sb.append("0");
+
+                sb.append(Long.toString(array[x] & 0xff, 16));
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        return sb.toString();
     }
 }
 

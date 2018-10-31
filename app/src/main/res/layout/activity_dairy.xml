@@ -7,7 +7,7 @@
     android:layout_height="match_parent">
 
 
-    <com.gx.mydairy.dairy.Util.SwipeListView
+    <com.gx.worings.Util.SwipeListView
         android:id="@+id/lv_dairy_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -22,7 +22,7 @@
         swipe:swipeOffsetLeft="420dp"
         swipe:swipeOpenOnLongPress="false">
 
-    </com.gx.mydairy.dairy.Util.SwipeListView>
+    </com.gx.worings.Util.SwipeListView>
 
     <ImageView
         android:id="@+id/Iv_dairy_add"

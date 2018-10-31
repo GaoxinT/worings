@@ -186,11 +186,12 @@ public class MainActivity extends BaseActivity {
             String password = mSp.getString("password", "");
 
             if (UtilToos.ping()) {
-                if (MySqlUtil.login(id, password)) {
-                    return "0";
-                } else {
-                    return "1";
-                }
+//                if (MySqlUtil.login(id, password)) {
+//                    return "0";
+//                } else {
+//                    return "1";
+//                }
+                return "0";
             } else {
                 return "2";
             }

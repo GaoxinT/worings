@@ -36,16 +36,18 @@ public class ExampleUnitTest {
         //m.put("endIndex","10");
 
         list.add(m);
-        System.out.println(mapToInsertSql(m));
+       // System.out.println(mapToInsertSql(m));
         try {
             URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL_LOCAL,m,null);
             String s = HttpRequestUtil.readString(conn.getInputStream());
             JSONArray jsonObject = (JSONArray) JSONArray.parse(s);
-            JSONObject j = (JSONObject) jsonObject.get(0);
+            Map j = (Map) jsonObject.get(0);
             System.out.println(j.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+
 
     }
     /**

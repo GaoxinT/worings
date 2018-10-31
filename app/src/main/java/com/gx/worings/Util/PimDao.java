@@ -146,16 +146,18 @@ public class PimDao {
      *
      * @return
      */
-    public static JSONObject selectOne(String tab, String where) {
+    public static Map<String, String> selectOne(String tab, String where) {
         Map<String, String> params = new HashMap<>();
         int count = PimDao.selectForInteger(tab, where);
         params.put("where", where);
+        params.put("tab", tab);
         params.put("type", cons.selectOne);
         try {
             URLConnection conn = HttpRequestUtil.sendPostRequest(cons.SQL_URL, params, null);
             String result = HttpRequestUtil.readString(conn.getInputStream());
-            System.out.println(result);
-            return JSONObject.parseObject(result);
+            JSONArray jsonObject = (JSONArray) JSONArray.parse(result);
+            Map<String, String> resultMap = (Map<String, String>) jsonObject.get(0);
+            return resultMap;
         } catch (Exception es) {
             es.printStackTrace();
             return null;
@@ -195,6 +197,37 @@ public class PimDao {
      * @return
      */
     public static String mapToInsertSql(Map<String, String> params) {
+        String Field = "";
+        String values = "";
+        try {
+            if (null != params) {
+                Boolean isFrist = true;
+                for (String key : params.keySet()) {
+                    if (isFrist) {
+                        Field += "(" + key;
+                        values += "('" + params.get(key) + "'";
+                        isFrist = false;
+                    }else {
+                        Field += "," + key;
+                        values += ",'" + params.get(key) + "'";
+                    }
+                }
+            }
+            Field +=  ")";
+            values +=  ")";
+            return  Field + " values " + values;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    /**
+     * 插入数据
+     *
+     * @return
+     */
+    public static String JSONObjectToMap(Map<String, String> params) {
         String Field = "";
         String values = "";
         try {

@@ -86,12 +86,14 @@ public class LocationUtil {
         Location location = locationManager.getLastKnownLocation(locationProvider);
         if (location != null) {
             //不为空,显示地理位置经纬度
-            Toast.makeText(mContext, location.getLatitude() + "" + location.getLongitude(), Toast.LENGTH_SHORT).show();
-            System.out.print(location.getLatitude() + "" + location.getLongitude());
             Log.d("经度：", location.getLatitude() + "");
             Log.d("纬度：", location.getLongitude() + "");
-            updataLocation_local u = new updataLocation_local();
-            u.execute(location);
+            if (!"0.0".equals(location.getLatitude())) {
+                updataLocation_local u = new updataLocation_local();
+                u.execute(location);
+            } else {
+                Log.e("--------------------", "位置获取失败");
+            }
 
         }
         //监视地理位置变化
@@ -140,13 +142,6 @@ public class LocationUtil {
             Date date = new Date(System.currentTimeMillis());//获取当前时间
             Map<String, String> params = new HashMap<>();
             try {
-                double lat = location.getLatitude();
-                double longs = location.getLongitude();
-                String time = simpleDateFormat.format(date);
-                String phone = android.os.Build.BRAND + Build.MODEL;
-                String sql = "insert into t_location VALUES('" + phone + "','" +
-                        lat + "','" + longs + "','" + longs + "," + lat + "','" + time + "')";
-                MySqlUtil.execSQL(sql);
                 params.put("lat", String.valueOf(location.getLatitude()));
                 params.put("lng", String.valueOf(location.getLongitude()));
                 params.put("lng_lat", location.getLongitude() + "," + location.getLatitude());
@@ -175,10 +170,11 @@ public class LocationUtil {
         @Override
         public void onLocationChanged(AMapLocation aMapLocation) {
             //Toast.makeText(mContext, aMapLocation.toString(),Toast.LENGTH_SHORT).show();
-            if (!"0.0".equals(aMapLocation.getLatitude())) {
+            String location = aMapLocation.getLatitude()+"";
+            if (!"0.0".equals(location)) {
                 new updataLocation_gd().execute(aMapLocation);
-            }else {
-                Log.e("--------------------","位置获取失败");
+            } else {
+                Log.e("--------------------", "位置获取失败");
             }
         }
     };

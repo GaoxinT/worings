@@ -12,6 +12,7 @@ public class Uesr {
     private static String userPwd;
     private static String userState;
     private static String userLastLogin;
+    private static String userSex;
 
     private Uesr(){}
     private static Uesr uesr;
@@ -24,7 +25,6 @@ public class Uesr {
         }
 
     }
-
 
     public String getUserPhone() {
         return userPhone;
@@ -72,6 +72,14 @@ public class Uesr {
 
     public void setUserState(String userState) {
         this.userState = userState;
+    }
+
+    public String getUserSex() {
+        return userSex;
+    }
+
+    public void setUserSex(String userSex) {
+        Uesr.userSex = userSex;
     }
 
     public void setNull() {
