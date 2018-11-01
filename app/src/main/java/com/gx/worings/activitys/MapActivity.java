@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
@@ -20,7 +21,11 @@ import com.amap.api.maps2d.model.MarkerOptions;
 import com.amap.api.maps2d.model.MyLocationStyle;
 import com.gx.worings.R;
 import com.gx.worings.Util.MySqlUtil;
+import com.gx.worings.Util.PimDao;
+
 import android.view.View.OnClickListener;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 
 import org.json.JSONArray;
@@ -28,20 +33,19 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 
-public class MapActivity extends BaseActivity  implements OnClickListener,LocationSource, AMapLocationListener {
+public class MapActivity extends BaseActivity implements OnClickListener, LocationSource, AMapLocationListener {
 
     private final String TAG = "MapActivity";
     public static final int REFRESH_DELAY = 4000;
 
     private MapView mapView;
     private AMap aMap;
-    private Button basicmap;
-    private Button rsmap;
-    private Button nightmap;
-    private Button navimap;
-    private CheckBox mStyleCheckbox;
+    private RadioButton radioButton_bz;
+    private RadioButton radioButton_wx;
+    private CheckBox checkBox_Traffic;
     private AMapLocationClient mLocationClient = null;
     private AMapLocationClientOption mLocationOption = null;
     private LocationSource.OnLocationChangedListener mListener = null;
@@ -69,21 +73,23 @@ public class MapActivity extends BaseActivity  implements OnClickListener,Locati
         if (aMap == null) {
             aMap = mapView.getMap();
         }
-
-//        MyLocationStyle myLocationStyle;
-//        myLocationStyle = new MyLocationStyle();//初始化定位蓝点样式类myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）如果不设置myLocationType，默认也会执行此种模式。
-//        myLocationStyle.interval(2000); //设置连续定位模式下的定位间隔，只在连续定位模式下生效，单次定位模式下不会生效。单位为毫秒。
-//        aMap.setMyLocationStyle(myLocationStyle);//设置定位蓝点的Style
-//        //aMap.getUiSettings().setMyLocationButtonEnabled(true);设置默认定位按钮是否显示，非必需设置。
-//        aMap.setMyLocationEnabled(true);
-//        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_SHOW);//只定位一次。
-//        myLocationStyle.showMyLocation(true);//设置是否显示定位小蓝点，用于满足只想使用定位，不想使用定位小蓝点的场景，设置false以后图面上不再有定位蓝点的概念，但是会持续回调位置信息。
+        aMap.setTrafficEnabled(true);
+        //MyLocationStyle myLocationStyle;
+        //myLocationStyle = new MyLocationStyle();//初始化定位蓝点样式类myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）如果不设置myLocationType，默认也会执行此种模式。
+        //myLocationStyle.interval(2000); //设置连续定位模式下的定位间隔，只在连续定位模式下生效，单次定位模式下不会生效。单位为毫秒。
+        //aMap.setMyLocationStyle(myLocationStyle);//设置定位蓝点的Style
+        //aMap.getUiSettings().setMyLocationButtonEnabled(true);设置默认定位按钮是否显示，非必需设置。
+        //aMap.setMyLocationEnabled(true);
+        //myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_SHOW);//只定位一次。
+        //myLocationStyle.showMyLocation(true);//设置是否显示定位小蓝点，用于满足只想使用定位，不想使用定位小蓝点的场景，设置false以后图面上不再有定位蓝点的概念，但是会持续回调位置信息。
         new updatePoint().execute();
     }
 
     @Override
     public void findViews() {
-
+        radioButton_bz = findViewById(R.id.radioButton_bz);
+        radioButton_wx = findViewById(R.id.radioButton_wx);
+        checkBox_Traffic = findViewById(R.id.checkBox_Traffic);
     }
 
     @Override
@@ -94,33 +100,64 @@ public class MapActivity extends BaseActivity  implements OnClickListener,Locati
                 finish();
             }
         });
+        radioButton_bz.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Boolean isbz = radioButton_bz.isChecked();
+                if (isbz) {
+                    aMap.setMapType(AMap.MAP_TYPE_NORMAL);// 设置卫星地图模式，aMap是地图控制器对象。
+                }
+            }
+        });
+
+        radioButton_wx.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Boolean iswx = radioButton_wx.isChecked();
+                if (iswx) {
+                    aMap.setMapType(AMap.MAP_TYPE_SATELLITE);// 设置卫星地图模式，aMap是地图控制器对象。
+                }
+            }
+        });
+
+        checkBox_Traffic.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Boolean isTraffic = checkBox_Traffic.isChecked();
+                if (isTraffic) {
+                    aMap.setTrafficEnabled(true);//显示实时路况图层，aMap是地图控制器对象。
+                } else {
+                    aMap.setTrafficEnabled(false);
+                }
+            }
+        });
     }
 
-    class updatePoint extends AsyncTask<Object,String,Object>{
+    class updatePoint extends AsyncTask<Object, String, Object> {
         @Override
         protected Object doInBackground(Object... objects) {
-            String sql = "select * from t_location ORDER BY time desc LIMIT 0,2 ";
             try {
-                return MySqlUtil.queryBack(sql);
-            }catch (Exception e){
-                Log.e("eeeeeeeeeeeeeee",e.getMessage());
+                return PimDao.selectOne("t_location", "1 = 1", "ORDER BY time desc LIMIT 0,1");
+            } catch (Exception e) {
+                Log.e("eeeeeeeeeeeeeee", e.getMessage());
                 return null;
             }
         }
 
         @Override
         protected void onPostExecute(Object s) {
-            super.onPostExecute(s);
             LatLng latLng = null;
-            if(s != null){
-                JSONArray array  = (JSONArray) s;
-                if(array.length()>0){
+            if (s != null) {
+                Map<String, String> params = (Map<String, String>) s;
+                if (params.size() > 0) {
                     try {
-                        JSONObject object = array.getJSONObject(0);
-                        Log.d("dasdas",object.toString());
-                        Double lat = object.getDouble( "lat") ;   // 这里的jcourse得到的数据就是huangt-test.
-                        Double lng = object.getDouble("lng");
-                        latLng = new LatLng(lat,lng);
+                        Log.d("dasdas", params.toString());
+                        Double lat = Double.valueOf(params.get("lat"));   // 这里的jcourse得到的数据就是huangt-test.
+                        Double lng = Double.valueOf(params.get("lng"));
+                        latLng = new LatLng(lat, lng);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -133,16 +170,17 @@ public class MapActivity extends BaseActivity  implements OnClickListener,Locati
                 Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).title("YY").snippet("DefaultMarker"));
             }
         }
+
     }
 
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
-        Log.i(TAG,"onPointerCaptureChanged----hasCapture:"+hasCapture);
+        Log.i(TAG, "onPointerCaptureChanged----hasCapture:" + hasCapture);
     }
 
     @Override
     public void activate(OnLocationChangedListener onLocationChangedListener) {
-        Log.i(TAG,"activate()");
+        Log.i(TAG, "activate()");
         mListener = onLocationChangedListener;
     }
 
@@ -232,6 +270,7 @@ public class MapActivity extends BaseActivity  implements OnClickListener,Locati
             }
         }
     }
+
     @Override
     public void onClick(View v) {
 

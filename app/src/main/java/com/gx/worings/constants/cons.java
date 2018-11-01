@@ -7,8 +7,8 @@ package com.gx.worings.constants;
 public class cons {
 
     public final static String HOST = "192.168.8.234:8080";
-    //public final static String SQL_URL = "http://" + "183.215.2.237" + "/woring/appexecute!ExecuteSql.action";
-    public final static String SQL_URL = "http://" + "192.168.0.234:8080" + "/woring/appexecute!ExecuteSql.action";
+    public final static String SQL_URL = "http://" + "183.215.2.237" + "/woring/appexecute!ExecuteSql.action";
+    //public final static String SQL_URL = "http://" + "192.168.0.234:8080" + "/woring/appexecute!ExecuteSql.action";
     public final static String user = "1001";
     public final static int limit = 20;
     public final static int page = 1;

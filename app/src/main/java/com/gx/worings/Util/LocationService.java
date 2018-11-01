@@ -12,21 +12,19 @@ public class LocationService extends Service {
 
     public void onCreate(){
         super.onCreate();
-        Log.d("AAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAA");
-
+        Log.d("启动服务", "start——location");
+        try {
+            LocationUtil location = new LocationUtil(this);
+            location.getLngLatByGD();
+        }catch (Exception es){
+            Log.e("error", "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+        }
     }
 
     @Override
     public IBinder onBind(Intent intent){
         Log.d("BBBBBBBBBBBBBBBBBBB", "BBBBBBBBBBBBBBBBBBBBBBB");
         //Toast.makeText(getApplicationContext(), "不默认Toast样式", Toast.LENGTH_LONG).show();
-        try {
-            LocationUtil location = new LocationUtil(this);
-            location.getLngLatByGD();
-        }catch (Exception es){
-            Log.d("AAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAA");
-        }
-
         return null;
     }
 }

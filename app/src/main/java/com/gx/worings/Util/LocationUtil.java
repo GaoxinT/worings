@@ -211,8 +211,10 @@ public class LocationUtil {
                 params.put("address", location.getAddress());
                 params.put("time", simpleDateFormat.format(date));
                 params.put("phone", android.os.Build.BRAND + " " + Build.MODEL);
-                PimDao.insert("t_location", params);
-
+                int result = PimDao.insert("t_location", params);
+                if(-1 == result){
+                    return "false";
+                }
             } catch (Exception re) {
                 return "false";
             }
@@ -224,7 +226,7 @@ public class LocationUtil {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
             //Toast.makeText(mContext,""+ s , Toast.LENGTH_SHORT).show();
-            Log.d("---------------------", s + "位置保存success");
+            Log.d("---------------------", "位置保存-------------------------------------" + s);
         }
     }
 }

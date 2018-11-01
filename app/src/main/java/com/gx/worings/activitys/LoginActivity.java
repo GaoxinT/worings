@@ -171,12 +171,12 @@ public class LoginActivity extends BaseActivity {
         protected String doInBackground(Object... params) {
             Map<String, String> map = (Map<String, String>) params[0];
             try {
-                Map<String, String> result = PimDao.selectOne("t_sys_user", "USER_ACCOUNT = '" + map.get("username") + "'");
+                Map<String, String> result = PimDao.selectOne("t_sys_user", "USER_ACCOUNT = '" + map.get("username") + "'",null);
                 if (result.size() != 0) {
                     if (result.get("USER_PWD").equals(MD5.digest(pwdEt.getText().toString() + result.get("USER_ID")))) {
                         Uesr.getInstance().setUserId(result.get("USER_ID"));
                         Uesr.getInstance().setUserPwd(result.get("USER_PWD"));
-                        Uesr.getInstance().setUserSex(result.get("USER_PWD"));
+                        Uesr.getInstance().setUserSex(result.get("USER_SEX"));
                         Uesr.getInstance().setUserName(result.get("USER_NAME"));
                         Uesr.getInstance().setUserPhone(result.get("USER_PHONE"));
                         Uesr.getInstance().setUserLastLogin(result.get("USER_LAST_LOGIN"));
