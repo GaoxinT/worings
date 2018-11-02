@@ -1,38 +1,50 @@
 package com.gx.worings.activitys;
 
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CheckBox;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
-import com.amap.api.maps2d.AMap;
-import com.amap.api.maps2d.CameraUpdateFactory;
-import com.amap.api.maps2d.LocationSource;
-import com.amap.api.maps2d.MapView;
-import com.amap.api.maps2d.model.LatLng;
-import com.amap.api.maps2d.model.Marker;
-import com.amap.api.maps2d.model.MarkerOptions;
-import com.amap.api.maps2d.model.MyLocationStyle;
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
+import com.amap.api.maps.LocationSource;
+import com.amap.api.maps.MapView;
+import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.LatLngBounds;
+import com.amap.api.maps.model.Marker;
+import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.Polyline;
+import com.amap.api.maps.model.PolylineOptions;
+import com.amap.api.maps.model.animation.Animation;
+import com.amap.api.maps.model.animation.ScaleAnimation;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.route.BusRouteResult;
+import com.amap.api.services.route.DriveRouteResult;
+import com.amap.api.services.route.RideRouteResult;
+import com.amap.api.services.route.RouteSearch;
+import com.amap.api.services.route.WalkPath;
+import com.amap.api.services.route.WalkRouteResult;
+import com.amap.api.services.route.WalkStep;
 import com.gx.worings.R;
-import com.gx.worings.Util.MySqlUtil;
+import com.gx.worings.Util.Amap.LocationUtil;
+import com.gx.worings.Util.Amap.WalkRouteOverlay;
 import com.gx.worings.Util.PimDao;
 
 import android.view.View.OnClickListener;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.Toast;
 
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 
@@ -140,7 +152,7 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         @Override
         protected Object doInBackground(Object... objects) {
             try {
-                return PimDao.selectOne("t_location", "1 = 1", "ORDER BY time desc LIMIT 0,1");
+                return PimDao.selectOne("t_location", "1 = 1 and id = '113'", "ORDER BY time desc LIMIT 0,1");
             } catch (Exception e) {
                 Log.e("eeeeeeeeeeeeeee", e.getMessage());
                 return null;
@@ -164,10 +176,70 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
 //                    for (int i = 0; i<array.length();i++){
 //                    }
                 }
-                aMap.moveCamera(CameraUpdateFactory.zoomTo(15));
+                AMapLocation aMapLocation = LocationUtil.getInstance(getApplicationContext()).mLocationClient.getLastKnownLocation();
+                LatLng latLng1 = new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude());
+                List<LatLng> latLngs = new ArrayList<LatLng>();
+                latLngs.add(latLng);
+                latLngs.add(latLng1);
+                LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+                boundsBuilder.include(latLng);
+                boundsBuilder.include(latLng1);
+                aMap.animateCamera(CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), 300));
                 // 将地图移动到定位点
-                aMap.moveCamera(CameraUpdateFactory.changeLatLng(latLng));
-                Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).title("YY").snippet("DefaultMarker"));
+                //aMap.moveCamera(CameraUpdateFactory.changeLatLng(latLng));
+                //Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).title("YY").snippet("DefaultMarker"));
+                MarkerOptions options = new MarkerOptions();
+                options.position(latLng);
+                Marker marker = aMap.addMarker(options);
+                options.position(latLng1);
+                Marker marker1 = aMap.addMarker(options);
+                Animation markerAnimation = new ScaleAnimation(0, 1, 0, 1); //初始化生长效果动画
+                markerAnimation.setDuration(1000);  //设置动画时间 单位毫秒
+                marker.setAnimation(markerAnimation);
+                marker.setTitle("YY");
+                marker.startAnimation();
+
+                marker1.setAnimation(markerAnimation);
+                marker1.setTitle("GX");
+                marker1.startAnimation();
+
+                Polyline polyline = aMap.addPolyline(new PolylineOptions().addAll(latLngs).width(10).color(Color.RED));
+                RouteSearch routeSearch = new RouteSearch(getApplicationContext());
+                LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
+                LatLonPoint latLonPoint1 = new LatLonPoint(latLng1.latitude, latLng1.longitude);
+                RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(latLonPoint1, latLonPoint);
+                RouteSearch.WalkRouteQuery query = new RouteSearch.WalkRouteQuery(fromAndTo);
+                routeSearch.calculateWalkRouteAsyn(query);
+                routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
+                    @Override
+                    public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
+
+                    }
+
+                    @Override
+                    public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
+
+                    }
+
+                    @Override
+                    public void onWalkRouteSearched(WalkRouteResult result, int i) {
+                        if (result != null && result.getPaths() != null && result.getPaths().size() > 0) {
+                            WalkRouteResult walkRouteResult = result;
+                            WalkPath walkPath = walkRouteResult.getPaths().get(0);
+                            //aMap.clear();// 清理地图上的所有覆盖物
+                            WalkRouteOverlay walkRouteOverlay = new WalkRouteOverlay(aMap, walkPath, walkRouteResult.getStartPos(), walkRouteResult.getTargetPos());
+                            //walkRouteOverlay.removeFromMap();
+                            walkRouteOverlay.addToMap();
+                            //walkRouteOverlay.zoomToSpan();
+                            Toast.makeText(getApplicationContext(), "---", Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
+
+                    }
+                });
             }
         }
 
@@ -233,25 +305,7 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         if (aMapLocation != null) {
             Log.i(TAG, "onLocationChanged()--aMapLocation.getErrorCode():" + aMapLocation.getErrorCode());
             if (aMapLocation.getErrorCode() == 0) {
-                int locationType = aMapLocation.getLocationType(); // 获取当前定位结果来源，如网络定位结果，详见定位类型表
-                double latitude = aMapLocation.getLatitude(); // 获取纬度
-                double longitude = aMapLocation.getLongitude(); // 获取经度
-                float accuracy = aMapLocation.getAccuracy(); // 获取精度信息
-                String address = aMapLocation.getAddress(); // 地址，如果option中设置isNeedAddress为false，则没有此结果，
-                // 网络定位结果中会有地址信息，GPS定位不返回地址信息。
-                String country = aMapLocation.getCountry(); // 国家信息
-                String province = aMapLocation.getProvince(); // 省信息
-                String city = aMapLocation.getCity(); // 城市信息
-                String district = aMapLocation.getDistrict(); // 城区信息
-                String street = aMapLocation.getStreet(); // 街道信息
-                String streetNum = aMapLocation.getStreetNum(); // 街道门牌号信息
-                String cityCode = aMapLocation.getCityCode(); // 城市编码
-                String adCode = aMapLocation.getAdCode(); // 地区编码
-                String aoiName = aMapLocation.getAoiName(); // 获取当前定位点的AOI信息
-                String buildingId = aMapLocation.getBuildingId(); // 获取当前室内定位的建筑物Id
-                String floor = aMapLocation.getFloor(); // 获取当前室内定位的楼层
-                int gpsAccuracyStatus = aMapLocation.getGpsAccuracyStatus(); //获取GPS的当前状态
-                // 获取定位时间
+                int locationType = aMapLocation.getLocationType(); // 获取当前定位结果来源，如网络定位结果，详见定位类型表 double latitude = aMapLocation.getLatitude(); // 获取纬度      double longitude = aMapLocation.getLongitude(); // 获取经度             float accuracy = aMapLocation.getAccuracy(); // 获取精度信息                String address = aMapLocation.getAddress(); // 地址，如果option中设置isNeedAddress为false，则没有此结果，                // 网络定位结果中会有地址信息，GPS定位不返回地址信息。                String country = aMapLocation.getCountry(); // 国家信息                String province = aMapLocation.getProvince(); // 省信息                String city = aMapLocation.getCity(); // 城市信息                String district = aMapLocation.getDistrict(); // 城区信息                String street = aMapLocation.getStreet(); // 街道信息                String streetNum = aMapLocation.getStreetNum(); // 街道门牌号信息                String cityCode = aMapLocation.getCityCode(); // 城市编码                String adCode = aMapLocation.getAdCode(); // 地区编码                String aoiName = aMapLocation.getAoiName(); // 获取当前定位点的AOI信息                String buildingId = aMapLocation.getBuildingId(); // 获取当前室内定位的建筑物Id                String floor = aMapLocation.getFloor(); // 获取当前室内定位的楼层                int gpsAccuracyStatus = aMapLocation.getGpsAccuracyStatus(); //获取GPS的当前状态                // 获取定位时间
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date date = new Date(aMapLocation.getTime());
                 df.format(date);
@@ -264,9 +318,7 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
 
             } else {
                 // 定位失败时，可通过ErrCode（错误码）信息来确定失败的原因，errInfo是错误信息，详见错误码表。
-                Log.e("HLQ_Struggle", "location Error, ErrCode:"
-                        + aMapLocation.getErrorCode() + ", errInfo:"
-                        + aMapLocation.getErrorInfo());
+                Log.e("HLQ_Struggle", "location Error, ErrCode:" + aMapLocation.getErrorCode() + ", errInfo:" + aMapLocation.getErrorInfo());
             }
         }
     }

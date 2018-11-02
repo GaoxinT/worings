@@ -1,14 +1,8 @@
 package com.gx.worings.activitys;
 
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -22,7 +16,7 @@ import com.gx.worings.Entry.Uesr;
 import com.gx.worings.Fragments.Fragment_One;
 import com.gx.worings.Fragments.Fragment_Three;
 import com.gx.worings.Fragments.Fragment_Two;
-import com.gx.worings.Util.LocationUtil;
+import com.gx.worings.Util.Amap.LocationUtil;
 import com.gx.worings.Util.MySqlUtil;
 import com.gx.worings.Util.UtilToos;
 
@@ -53,7 +47,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void getlocation() {
-        LocationUtil location = new LocationUtil(this);
+        LocationUtil location = LocationUtil.getInstance(getApplicationContext());
         //location.getLngAndLat();
         try {
             location.getLngLatByGD();

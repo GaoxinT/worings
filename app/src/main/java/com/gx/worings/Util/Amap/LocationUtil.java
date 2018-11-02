@@ -1,10 +1,8 @@
-package com.gx.worings.Util;
+package com.gx.worings.Util.Amap;
 
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -12,15 +10,14 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.gx.worings.Util.PimDao;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,7 +35,7 @@ public class LocationUtil {
     private Context mContext;
     private LocationManager locationManager;
 
-    public LocationUtil(Context context) {
+    private LocationUtil(Context context) {
         this.mContext = context;
     }
 
@@ -163,8 +160,6 @@ public class LocationUtil {
         }
     }
 
-    //声明AMapLocationClient类对象
-    public AMapLocationClient mLocationClient = null;
     //声明定位回调监听器
     public AMapLocationListener mLocationListener = new AMapLocationListener() {
         @Override
@@ -178,6 +173,9 @@ public class LocationUtil {
             }
         }
     };
+
+    //声明AMapLocationClient类对象
+    public AMapLocationClient mLocationClient = null;
     public AMapLocationClientOption mLocationOption = null;
 
     public void getLngLatByGD() {
@@ -193,8 +191,6 @@ public class LocationUtil {
         mLocationClient.setLocationOption(mLocationOption);
         //启动定位
         mLocationClient.startLocation();
-
-
     }
 
     class updataLocation_gd extends AsyncTask<Object, String, String> {

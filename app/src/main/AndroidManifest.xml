@@ -65,7 +65,7 @@
         </service>
         <service android:name="com.amap.api.location.APSService"></service>
         <meta-data android:name="com.amap.api.v2.apikey" android:value="e4a18a81707a90c7341283672dc9ce0e"></meta-data>
-        <service android:name=".Util.LocationService"></service>
+        <service android:name=".Util.Amap.LocationService"></service>
         <receiver android:name=".Util.BootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

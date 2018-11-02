@@ -1,11 +1,10 @@
-package com.gx.worings.Util;
+package com.gx.worings.Util.Amap;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
 public class LocationService extends Service {
     @Nullable
@@ -14,7 +13,7 @@ public class LocationService extends Service {
         super.onCreate();
         Log.d("启动服务", "start——location");
         try {
-            LocationUtil location = new LocationUtil(this);
+            LocationUtil location = LocationUtil.getInstance(getApplicationContext());
             location.getLngLatByGD();
         }catch (Exception es){
             Log.e("error", "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
