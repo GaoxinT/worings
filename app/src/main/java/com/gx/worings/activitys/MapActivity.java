@@ -3,8 +3,13 @@ package com.gx.worings.activitys;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.CheckBox;
 
 import com.amap.api.location.AMapLocation;
@@ -15,13 +20,17 @@ import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.MapView;
+import com.amap.api.maps.UiSettings;
+import com.amap.api.maps.model.CameraPosition;
+import com.amap.api.maps.model.Circle;
+import com.amap.api.maps.model.CircleOptions;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.Polyline;
 import com.amap.api.maps.model.PolylineOptions;
-import com.amap.api.maps.model.animation.Animation;
 import com.amap.api.maps.model.animation.ScaleAnimation;
 import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.route.BusRouteResult;
@@ -30,13 +39,14 @@ import com.amap.api.services.route.RideRouteResult;
 import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkPath;
 import com.amap.api.services.route.WalkRouteResult;
-import com.amap.api.services.route.WalkStep;
 import com.gx.worings.R;
 import com.gx.worings.Util.Amap.LocationUtil;
 import com.gx.worings.Util.Amap.WalkRouteOverlay;
 import com.gx.worings.Util.PimDao;
 
 import android.view.View.OnClickListener;
+import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
@@ -46,27 +56,38 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
-public class MapActivity extends BaseActivity implements OnClickListener, LocationSource, AMapLocationListener {
+public class MapActivity extends BaseActivity implements  RouteSearch.OnRouteSearchListener {
 
     private final String TAG = "MapActivity";
     public static final int REFRESH_DELAY = 4000;
 
     private MapView mapView;
+    private ImageView ivCompass;
     private AMap aMap;
+    private UiSettings mUiSettings;
     private RadioButton radioButton_bz;
     private RadioButton radioButton_wx;
+    private RadioButton radioButton_jc;
+    private RadioButton radioButton_gj;
+    private RadioButton radioButton_bx;
     private CheckBox checkBox_Traffic;
-    private AMapLocationClient mLocationClient = null;
-    private AMapLocationClientOption mLocationOption = null;
-    private LocationSource.OnLocationChangedListener mListener = null;
+    private LatLng latLng_YY;
+    private LatLng latLng_GX;
+    private RouteSearch routeSearch;
+    private RotateAnimation rotateAnimation;
+    MyLocationStyle myLocationStyle;
+    private float lastBearing;
+    private Circle c;
+    private AMapLocationListener mListener;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-
         mapView = (MapView) findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);// 此方法必须重写
         init();
@@ -79,21 +100,20 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         setTitleText("Map");
         setOkVisibity(false);
         setOKImg(R.mipmap.ic_menu_moreoverflow_norma);
-        findViews();
-        setListeners();
-
         if (aMap == null) {
             aMap = mapView.getMap();
         }
+        findViews();
+        setListeners();
+        mListener = LocationUtil.getInstance(getApplicationContext()).mLocationListener;
         aMap.setTrafficEnabled(true);
-        //MyLocationStyle myLocationStyle;
-        //myLocationStyle = new MyLocationStyle();//初始化定位蓝点样式类myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）如果不设置myLocationType，默认也会执行此种模式。
-        //myLocationStyle.interval(2000); //设置连续定位模式下的定位间隔，只在连续定位模式下生效，单次定位模式下不会生效。单位为毫秒。
-        //aMap.setMyLocationStyle(myLocationStyle);//设置定位蓝点的Style
-        //aMap.getUiSettings().setMyLocationButtonEnabled(true);设置默认定位按钮是否显示，非必需设置。
-        //aMap.setMyLocationEnabled(true);
-        //myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_SHOW);//只定位一次。
-        //myLocationStyle.showMyLocation(true);//设置是否显示定位小蓝点，用于满足只想使用定位，不想使用定位小蓝点的场景，设置false以后图面上不再有定位蓝点的概念，但是会持续回调位置信息。
+        myLocationStyle = new MyLocationStyle();//初始化定位蓝点样式类myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）如果不设置myLocationType，默认也会执行此种模式。
+        myLocationStyle.interval(2000); //设置连续定位模式下的定位间隔，只在连续定位模式下生效，单次定位模式下不会生效。单位为毫秒。
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_SHOW);//只定位一次。
+        aMap.setMyLocationStyle(myLocationStyle);//设置定位蓝点的Style
+        aMap.setMyLocationEnabled(true);
+        mUiSettings.setMyLocationButtonEnabled(true);
+        mUiSettings.setCompassEnabled(true);
         new updatePoint().execute();
     }
 
@@ -102,10 +122,16 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         radioButton_bz = findViewById(R.id.radioButton_bz);
         radioButton_wx = findViewById(R.id.radioButton_wx);
         checkBox_Traffic = findViewById(R.id.checkBox_Traffic);
+        radioButton_jc = findViewById(R.id.radioButton_jc);
+        radioButton_gj = findViewById(R.id.radioButton_gj);
+        radioButton_bx = findViewById(R.id.radioButton_bx);
+        ivCompass = findViewById(R.id.iv_compass);
     }
 
     @Override
     public void setListeners() {
+
+
         getBasetitle_back().setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -146,8 +172,97 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
                 }
             }
         });
+        aMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+                float bearing = 360 - cameraPosition.bearing;
+                rotateAnimation = new RotateAnimation(lastBearing, bearing, 1, 0.5f, 1, 0.5f);
+                rotateAnimation.setFillAfter(true);
+                ivCompass.startAnimation(rotateAnimation);
+                lastBearing = bearing;
+            }
+
+            @Override
+            public void onCameraChangeFinish(CameraPosition cameraPosition) {
+
+            }
+        });
+        ivCompass.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CameraUpdateFactory cameraUpdateFactory = new CameraUpdateFactory();
+                aMap.moveCamera(cameraUpdateFactory.changeBearing(360));
+            }
+        });
+
+        radioButton_jc.setOnClickListener(new View.OnClickListener() {
+
+
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+        radioButton_gj.setOnClickListener(new View.OnClickListener() {
+
+
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+        radioButton_bx.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Boolean is_bx = radioButton_bx.isChecked();
+                if (is_bx) {
+                    routeSearch = new RouteSearch(getApplicationContext());
+                    LatLonPoint latLonPoint_GX = new LatLonPoint(latLng_GX.latitude, latLng_GX.longitude);
+                    LatLonPoint latLonPoint_YY = new LatLonPoint(latLng_YY.latitude, latLng_YY.longitude);
+                    final RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(latLonPoint_GX, latLonPoint_YY);
+                    RouteSearch.WalkRouteQuery query = new RouteSearch.WalkRouteQuery(fromAndTo);
+                    routeSearch.calculateWalkRouteAsyn(query);
+                    routeSearch.setRouteSearchListener(MapActivity.this);
+                }
+            }
+        });
     }
 
+    @Override
+    public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
+
+    }
+
+    @Override
+    public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
+
+    }
+
+    @Override
+    public void onWalkRouteSearched(WalkRouteResult result, int i) {
+        if (result != null && result.getPaths() != null && result.getPaths().size() > 0) {
+            WalkRouteResult walkRouteResult = result;
+            WalkPath walkPath = walkRouteResult.getPaths().get(0);
+            //aMap.clear();// 清理地图上的所有覆盖物
+            WalkRouteOverlay walkRouteOverlay = new WalkRouteOverlay(aMap, walkPath, walkRouteResult.getStartPos(), walkRouteResult.getTargetPos());
+            //walkRouteOverlay.removeFromMap();
+            walkRouteOverlay.addToMap();
+            //walkRouteOverlay.zoomToSpan();
+            Toast.makeText(getApplicationContext(), "路径规划成功！", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(getApplicationContext(), "路径规划失败！", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
+
+    }
+
+    /**
+     * 异步刷新
+     */
     class updatePoint extends AsyncTask<Object, String, Object> {
         @Override
         protected Object doInBackground(Object... objects) {
@@ -161,7 +276,6 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
 
         @Override
         protected void onPostExecute(Object s) {
-            LatLng latLng = null;
             if (s != null) {
                 Map<String, String> params = (Map<String, String>) s;
                 if (params.size() > 0) {
@@ -169,80 +283,91 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
                         Log.d("dasdas", params.toString());
                         Double lat = Double.valueOf(params.get("lat"));   // 这里的jcourse得到的数据就是huangt-test.
                         Double lng = Double.valueOf(params.get("lng"));
-                        latLng = new LatLng(lat, lng);
+                        latLng_YY = new LatLng(lat, lng);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-//                    for (int i = 0; i<array.length();i++){
-//                    }
                 }
+                //获取当前位置
                 AMapLocation aMapLocation = LocationUtil.getInstance(getApplicationContext()).mLocationClient.getLastKnownLocation();
-                LatLng latLng1 = new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude());
-                List<LatLng> latLngs = new ArrayList<LatLng>();
-                latLngs.add(latLng);
-                latLngs.add(latLng1);
-                LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-                boundsBuilder.include(latLng);
-                boundsBuilder.include(latLng1);
-                aMap.animateCamera(CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), 300));
-                // 将地图移动到定位点
-                //aMap.moveCamera(CameraUpdateFactory.changeLatLng(latLng));
-                //Marker marker = aMap.addMarker(new MarkerOptions().position(latLng).title("YY").snippet("DefaultMarker"));
-                MarkerOptions options = new MarkerOptions();
-                options.position(latLng);
-                Marker marker = aMap.addMarker(options);
-                options.position(latLng1);
-                Marker marker1 = aMap.addMarker(options);
-                Animation markerAnimation = new ScaleAnimation(0, 1, 0, 1); //初始化生长效果动画
-                markerAnimation.setDuration(1000);  //设置动画时间 单位毫秒
-                marker.setAnimation(markerAnimation);
-                marker.setTitle("YY");
-                marker.startAnimation();
-
-                marker1.setAnimation(markerAnimation);
-                marker1.setTitle("GX");
-                marker1.startAnimation();
-
-                Polyline polyline = aMap.addPolyline(new PolylineOptions().addAll(latLngs).width(10).color(Color.RED));
-                RouteSearch routeSearch = new RouteSearch(getApplicationContext());
-                LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
-                LatLonPoint latLonPoint1 = new LatLonPoint(latLng1.latitude, latLng1.longitude);
-                RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(latLonPoint1, latLonPoint);
-                RouteSearch.WalkRouteQuery query = new RouteSearch.WalkRouteQuery(fromAndTo);
-                routeSearch.calculateWalkRouteAsyn(query);
-                routeSearch.setRouteSearchListener(new RouteSearch.OnRouteSearchListener() {
-                    @Override
-                    public void onBusRouteSearched(BusRouteResult busRouteResult, int i) {
-
-                    }
-
-                    @Override
-                    public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int i) {
-
-                    }
-
-                    @Override
-                    public void onWalkRouteSearched(WalkRouteResult result, int i) {
-                        if (result != null && result.getPaths() != null && result.getPaths().size() > 0) {
-                            WalkRouteResult walkRouteResult = result;
-                            WalkPath walkPath = walkRouteResult.getPaths().get(0);
-                            //aMap.clear();// 清理地图上的所有覆盖物
-                            WalkRouteOverlay walkRouteOverlay = new WalkRouteOverlay(aMap, walkPath, walkRouteResult.getStartPos(), walkRouteResult.getTargetPos());
-                            //walkRouteOverlay.removeFromMap();
-                            walkRouteOverlay.addToMap();
-                            //walkRouteOverlay.zoomToSpan();
-                            Toast.makeText(getApplicationContext(), "---", Toast.LENGTH_LONG).show();
-                        }
-                    }
-
-                    @Override
-                    public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
-
-                    }
-                });
+                latLng_GX = new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude());
+                drawPointLine(latLng_YY, latLng_GX);//绘制两点及连线
             }
         }
 
+        /**
+         * 画出两点
+         *
+         * @param latLng_YY
+         * @param latLng_GX
+         */
+        public void drawPointLine(LatLng latLng_YY, LatLng latLng_GX) {
+            List<LatLng> latLngs = new ArrayList<LatLng>();
+            latLngs.add(latLng_YY);
+            latLngs.add(latLng_GX);
+            LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+            boundsBuilder.include(latLng_YY);
+            boundsBuilder.include(latLng_GX);
+            aMap.animateCamera(CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), 300));
+            MarkerOptions options = new MarkerOptions();
+            options.position(latLng_GX);
+            Marker marker = aMap.addMarker(options);
+            options.position(latLng_YY);
+            Marker marker1 = aMap.addMarker(options);
+            com.amap.api.maps.model.animation.Animation markerAnimation = new ScaleAnimation(0, 1, 0, 1); //初始化生长效果动画
+            markerAnimation.setDuration(1000);  //设置动画时间 单位毫秒
+            marker.setAnimation(markerAnimation);
+            marker.setTitle("YY");
+            marker.startAnimation();
+            marker1.setAnimation(markerAnimation);
+            marker1.setTitle("GX");
+            marker1.startAnimation();
+            aMap.addPolyline(new PolylineOptions().addAll(latLngs).width(10).color(Color.RED));
+        }
+
+    }
+
+    private long start;
+    private circleTask mTimerTask;
+    private Timer mTimer = new Timer();
+    private final Interpolator interpolator1 = new LinearInterpolator();
+
+    //加载精度圈动画
+    public void Scalecircle(final Circle circle) {
+        start = SystemClock.uptimeMillis();
+        mTimerTask = new circleTask(circle, 1000);
+        mTimer.schedule(mTimerTask, 0, 30);
+    }
+
+    //定位精度圈半径变化的定时器
+    private  class circleTask extends TimerTask {
+        private double r;
+        private Circle circle;
+        private long duration = 1000;
+
+        public circleTask(Circle circle, long rate){
+            this.circle = circle;
+            this.r = circle.getRadius();
+            if (rate > 0 ) {
+                this.duration = rate;
+            }
+        }
+        @Override
+        public void run() {
+            try {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float input = (float)elapsed / duration;
+                //外圈放大后消失
+                float t = interpolator1.getInterpolation(input);
+                double r1 = (t + 1) * r;
+                circle.setRadius(r1);
+                if (input > 2){
+                    start = SystemClock.uptimeMillis();
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -250,16 +375,6 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         Log.i(TAG, "onPointerCaptureChanged----hasCapture:" + hasCapture);
     }
 
-    @Override
-    public void activate(OnLocationChangedListener onLocationChangedListener) {
-        Log.i(TAG, "activate()");
-        mListener = onLocationChangedListener;
-    }
-
-    @Override
-    public void deactivate() {
-
-    }
 
     /**
      * 方法必须重写
@@ -297,10 +412,8 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
         mapView.onDestroy();
     }
 
-    @Override
     public void onLocationChanged(AMapLocation aMapLocation) {
 
-// 解析AMapLocation对象
         // 判断AMapLocation对象不为空，当定位错误码类型为0时定位成功
         if (aMapLocation != null) {
             Log.i(TAG, "onLocationChanged()--aMapLocation.getErrorCode():" + aMapLocation.getErrorCode());
@@ -309,22 +422,21 @@ public class MapActivity extends BaseActivity implements OnClickListener, Locati
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date date = new Date(aMapLocation.getTime());
                 df.format(date);
-                // 设置缩放级别
-                aMap.moveCamera(CameraUpdateFactory.zoomTo(17));
                 // 将地图移动到定位点
-                aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude())));
+                //aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude())));
                 // 点击定位按钮 能够将地图的中心移动到定位点
-                mListener.onLocationChanged(aMapLocation);
-
+                //mListener.onLocationChanged(aMapLocation);
+                LatLng mylocation = new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude());
+                float accuracy = aMapLocation.getAccuracy();
+                c = aMap.addCircle(new CircleOptions().center(mylocation)
+                        .fillColor(Color.argb(70, 255, 218, 185))
+                        .radius(accuracy).strokeColor(Color.argb(255, 255, 228, 185))
+                        .strokeWidth(0));
+                Scalecircle(c);
             } else {
                 // 定位失败时，可通过ErrCode（错误码）信息来确定失败的原因，errInfo是错误信息，详见错误码表。
                 Log.e("HLQ_Struggle", "location Error, ErrCode:" + aMapLocation.getErrorCode() + ", errInfo:" + aMapLocation.getErrorInfo());
             }
         }
-    }
-
-    @Override
-    public void onClick(View v) {
-
     }
 }

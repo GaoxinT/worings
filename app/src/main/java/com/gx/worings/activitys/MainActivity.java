@@ -47,11 +47,18 @@ public class MainActivity extends BaseActivity {
     }
 
     private void getlocation() {
-        LocationUtil location = LocationUtil.getInstance(getApplicationContext());
-        //location.getLngAndLat();
         try {
-            location.getLngLatByGD();
-        }catch (Exception r){
+            LocationUtil location = LocationUtil.getInstance(getApplicationContext());
+            //location.getLngAndLat();
+            if(null == location.mLocationClient){
+                location.getLngLatByGD();
+//                if (!location.mLocationClient.isStarted()) {
+//                    location.getLngLatByGD();
+//                }
+//            } else {
+//
+            }
+        } catch (Exception r) {
             r.printStackTrace();
         }
     }

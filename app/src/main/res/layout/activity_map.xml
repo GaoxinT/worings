@@ -13,11 +13,12 @@
 
     <RadioGroup
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="70dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="0dp"
-        android:layout_marginEnd="0dp">
+        android:layout_marginEnd="0dp"
+        android:background="@color/white">
 
         <RadioButton
             android:id="@+id/radioButton_bz"
@@ -37,6 +38,42 @@
 
     </RadioGroup>
 
+    <RadioGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="0dp"
+        android:background="@color/white">
+
+        <RadioButton
+            android:id="@+id/radioButton_jc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:text="驾车" />
+
+        <RadioButton
+            android:id="@+id/radioButton_gj"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/radioButton_jc"
+            android:layout_marginTop="2dp"
+            android:checked="false"
+            android:text="公交" />
+
+        <RadioButton
+            android:id="@+id/radioButton_bx"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/radioButton_gj"
+            android:layout_marginTop="2dp"
+            android:checked="false"
+            android:text="步行" />
+
+    </RadioGroup>
+
     <CheckBox
         android:id="@+id/checkBox_Traffic"
         android:layout_width="wrap_content"
@@ -44,11 +81,21 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="4dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginTop="0dp"
+        android:background="@color/white"
         android:checked="true"
         android:text="交通" />
 
-
+    <ImageView
+        android:id="@+id/iv_compass"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="4dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginTop="34dp"
+        android:clickable="true"
+        android:scaleType="fitXY"
+        android:src="@mipmap/icon_compass" />
 </RelativeLayout>
